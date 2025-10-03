@@ -72,35 +72,35 @@ export const OwnerDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         
         {/* Header Section */}
-        <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center space-x-3 mb-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+                </svg>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">
+                <h1 className="text-2xl font-bold text-white">
                     Welcome back, {user?.username}!
-                  </h1>
-                  <p className="text-slate-400 mt-1">
+                </h1>
+                <p className="text-slate-400 mt-0.5 text-sm">
                     Manage and monitor your events
-                  </p>
+                </p>
                 </div>
-              </div>
+            </div>
             </div>
             <button
-              onClick={() => navigate('/owner/create-event')}
-              className="px-6 py-3.5 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-semibold rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-cyan-500/25 flex items-center space-x-2"
+            onClick={() => navigate('/owner/create-event')}
+            className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-semibold rounded-md transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-cyan-500/25 flex items-center space-x-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Create New Event</span>
+            </svg>
+            <span className="text-sm">Create New Event</span>
             </button>
-          </div>
+        </div>
         </div>
 
         {/* Stats Grid */}

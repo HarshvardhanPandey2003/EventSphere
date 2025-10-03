@@ -40,7 +40,7 @@ export const register = async (req, res) => {
 // Login user
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body; // ✅ Extract role from request
 
     // Find user with password
     const user = await User.findOne({ email });
@@ -54,6 +54,14 @@ export const login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    // Validate role matches
+    if (user.role !== role) {
+      return res.status(403).json({ 
+        error: `Access denied. Please login as ${user.role}` 
+      });
+    }
+
     // Generate token and set cookie
     const token = createToken(user.id);
     res.cookie('jwt', token, {

@@ -51,7 +51,11 @@ export const Navbar = () => {
   const handleLogout = async () => {
     try {
       await api.post('/api/auth/logout');
-      await checkAuth();
+      try {
+        await checkAuth(); // Expected to fail
+      } catch (e) {
+        // Ignore error - user is logged out
+      }
       navigate('/login');
     } catch (err) {
       console.error('Logout error:', err);

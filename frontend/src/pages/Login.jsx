@@ -16,16 +16,20 @@ export const Login = () => {
   const navigate = useNavigate();
   const { checkAuth } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent default form submission
+    setError(''); // Clear previous errors
+    
     try {
-      await api.post('/api/auth/login', formData);
-      await checkAuth();
-      navigate('/dashboard');
+        await api.post('/api/auth/login', formData);
+        await checkAuth();
+        navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Login failed');
+        // ✅ Better error handling
+        const errorMessage = err.response?.data?.error || err.message || 'Login failed';
+        setError(errorMessage);
     }
-  };
+    };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden">
