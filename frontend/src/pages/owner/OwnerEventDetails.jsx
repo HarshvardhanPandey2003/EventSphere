@@ -28,7 +28,7 @@ export const OwnerEventDetails = () => {
       // Verify ownership
       if (data.ownerId !== user.id) {
         setError('You do not have permission to view this event');
-        setTimeout(() => navigate('/owner/dashboard'), 2000);
+        setTimeout(() => navigate('/dashboard'), 2000);
         return;
       }
       
@@ -44,7 +44,7 @@ export const OwnerEventDetails = () => {
   const handleDeleteEvent = async () => {
     try {
       await api.delete(`/api/events/${id}`);
-      navigate('/owner/dashboard', { 
+      navigate('/dashboard', { 
         state: { message: 'Event deleted successfully' } 
       });
     } catch (err) {
@@ -130,7 +130,7 @@ export const OwnerEventDetails = () => {
             <div>
               <p className="text-red-400 font-medium">{error}</p>
               <button 
-                onClick={() => navigate('/owner/dashboard')}
+                onClick={() => navigate('/dashboard')}
                 className="text-red-300 text-sm underline mt-1"
               >
                 Return to Dashboard
@@ -154,7 +154,7 @@ export const OwnerEventDetails = () => {
         
         {/* Back Button */}
         <button
-          onClick={() => navigate('/owner/dashboard')}
+          onClick={() => navigate('/dashboard')}
           className="mb-6 flex items-center space-x-2 text-slate-400 hover:text-white transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
