@@ -14,18 +14,46 @@ export const OwnerEventDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState('details'); // details, attendees, analytics
+  const [activeTab, setActiveTab] = useState('details');
+  const [timeUntilDeadline, setTimeUntilDeadline] = useState(null);
 
   useEffect(() => {
     fetchEventDetails();
   }, [id]);
+
+  // Countdown timer for deadline
+  useEffect(() => {
+    if (!event?.deadline) return;
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const deadlineDate = new Date(event.deadline);
+      const timeLeft = deadlineDate.getTime() - now.getTime();
+
+      if (timeLeft <= 0) {
+        setTimeUntilDeadline({ expired: true });
+        return;
+      }
+
+      const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+      setTimeUntilDeadline({ days, hours, minutes, seconds, expired: false });
+    };
+
+    updateCountdown();
+    const intervalId = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [event?.deadline]);
 
   const fetchEventDetails = async () => {
     try {
       setLoading(true);
       const { data } = await api.get(`/api/events/${id}`);
       
-      // Verify ownership
       if (data.ownerId !== user.id) {
         setError('You do not have permission to view this event');
         setTimeout(() => navigate('/dashboard'), 2000);
@@ -69,6 +97,61 @@ export const OwnerEventDetails = () => {
       minute: '2-digit',
       hour12: true
     });
+  };
+
+  const formatShortDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const getDeadlineStatus = () => {
+    if (!event?.deadline) return 'no-deadline';
+    const now = new Date();
+    const deadlineDate = new Date(event.deadline);
+    const hoursUntilDeadline = (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (hoursUntilDeadline <= 0) return 'expired';
+    if (hoursUntilDeadline <= 24) return 'urgent';
+    if (hoursUntilDeadline <= 72) return 'soon';
+    return 'active';
+  };
+
+  const getDeadlineStatusColor = (status) => {
+    switch (status) {
+      case 'expired':
+        return 'bg-red-500/10 text-red-400 border-red-500/30';
+      case 'urgent':
+        return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+      case 'soon':
+        return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30';
+      case 'active':
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+      default:
+        return 'bg-slate-500/10 text-slate-400 border-slate-500/30';
+    }
+  };
+
+  const getDeadlineStatusText = (status) => {
+    switch (status) {
+      case 'expired':
+        return 'Registration Closed';
+      case 'urgent':
+        return 'Closing Soon!';
+      case 'soon':
+        return 'Deadline Approaching';
+      case 'active':
+        return 'Registration Open';
+      default:
+        return 'No Deadline Set';
+    }
   };
 
   const getEventStatus = () => {
@@ -175,10 +258,13 @@ export const OwnerEventDetails = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
               
-              {/* Status Badge */}
-              <div className="absolute top-6 right-6">
+              {/* Status Badges */}
+              <div className="absolute top-6 right-6 flex flex-col space-y-2">
                 <span className={`px-4 py-2 text-sm font-semibold rounded-full border ${getStatusColor(getEventStatus())}`}>
                   {getEventStatus()}
+                </span>
+                <span className={`px-4 py-2 text-sm font-semibold rounded-full border ${getDeadlineStatusColor(getDeadlineStatus())}`}>
+                  {getDeadlineStatusText(getDeadlineStatus())}
                 </span>
               </div>
             </div>
@@ -208,6 +294,67 @@ export const OwnerEventDetails = () => {
                     <span className="text-sm">{event.location}</span>
                   </div>
                 </div>
+
+                {/* Deadline Alert Banner */}
+                {event.deadline && getDeadlineStatus() !== 'expired' && (
+                  <div className={`p-4 rounded-lg border mb-4 ${
+                    getDeadlineStatus() === 'urgent' 
+                      ? 'bg-orange-500/10 border-orange-500/30' 
+                      : getDeadlineStatus() === 'soon'
+                      ? 'bg-yellow-500/10 border-yellow-500/30'
+                      : 'bg-emerald-500/10 border-emerald-500/30'
+                  }`}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <svg className={`w-5 h-5 ${
+                        getDeadlineStatus() === 'urgent' ? 'text-orange-400' : 
+                        getDeadlineStatus() === 'soon' ? 'text-yellow-400' : 
+                        'text-emerald-400'
+                      }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className={`font-semibold ${
+                        getDeadlineStatus() === 'urgent' ? 'text-orange-400' : 
+                        getDeadlineStatus() === 'soon' ? 'text-yellow-400' : 
+                        'text-emerald-400'
+                      }`}>
+                        Registration Deadline: {formatShortDate(event.deadline)}
+                      </span>
+                    </div>
+                    {timeUntilDeadline && !timeUntilDeadline.expired && (
+                      <div className="flex items-center space-x-4 text-sm">
+                        <span className={`${
+                          getDeadlineStatus() === 'urgent' ? 'text-orange-300' : 
+                          getDeadlineStatus() === 'soon' ? 'text-yellow-300' : 
+                          'text-emerald-300'
+                        }`}>
+                          Time Remaining:
+                        </span>
+                        <div className="flex items-center space-x-3 font-mono font-bold">
+                          <span className={`${
+                            getDeadlineStatus() === 'urgent' ? 'text-orange-400' : 
+                            getDeadlineStatus() === 'soon' ? 'text-yellow-400' : 
+                            'text-emerald-400'
+                          }`}>
+                            {timeUntilDeadline.days}d {timeUntilDeadline.hours}h {timeUntilDeadline.minutes}m {timeUntilDeadline.seconds}s
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {event.deadline && getDeadlineStatus() === 'expired' && (
+                  <div className="p-4 rounded-lg border bg-red-500/10 border-red-500/30 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-semibold text-red-400">
+                        Registration Closed - Deadline passed on {formatShortDate(event.deadline)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -343,6 +490,16 @@ export const OwnerEventDetails = () => {
                 </div>
 
                 <div>
+                  <h3 className="text-sm font-semibold text-slate-400 mb-2">Registration Deadline</h3>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-white">{formatDate(event.deadline)}</p>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getDeadlineStatusColor(getDeadlineStatus())}`}>
+                      {getDeadlineStatusText(getDeadlineStatus())}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
                   <h3 className="text-sm font-semibold text-slate-400 mb-2">Location</h3>
                   <p className="text-white">{event.location}</p>
                 </div>
@@ -353,7 +510,7 @@ export const OwnerEventDetails = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-400 mb-2">Status</h3>
+                  <h3 className="text-sm font-semibold text-slate-400 mb-2">Event Status</h3>
                   <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(getEventStatus())}`}>
                     {getEventStatus()}
                   </span>
@@ -473,6 +630,80 @@ export const OwnerEventDetails = () => {
                 </div>
               </div>
 
+              {/* Registration Deadline Countdown */}
+              <div className="bg-slate-700/30 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Registration Deadline</h3>
+                <div className="text-center py-4">
+                  {getDeadlineStatus() === 'expired' ? (
+                    <>
+                      <div className="text-4xl font-bold text-red-400 mb-2">
+                        Closed
+                      </div>
+                      <p className="text-slate-400">Registration period has ended</p>
+                      <p className="text-sm text-slate-500 mt-2">
+                        Closed on {formatShortDate(event.deadline)}
+                      </p>
+                    </>
+                  ) : timeUntilDeadline && !timeUntilDeadline.expired ? (
+                    <>
+                      <div className="grid grid-cols-4 gap-2 mb-4">
+                        <div className="bg-slate-800/50 rounded-lg p-3">
+                          <div className={`text-2xl font-bold ${
+                            getDeadlineStatus() === 'urgent' ? 'text-orange-400' : 
+                            getDeadlineStatus() === 'soon' ? 'text-yellow-400' : 
+                            'text-emerald-400'
+                          }`}>
+                            {timeUntilDeadline.days}
+                          </div>
+                          <div className="text-slate-400 text-xs">Days</div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-3">
+                          <div className={`text-2xl font-bold ${
+                            getDeadlineStatus() === 'urgent' ? 'text-orange-400' : 
+                            getDeadlineStatus() === 'soon' ? 'text-yellow-400' : 
+                            'text-emerald-400'
+                          }`}>
+                            {timeUntilDeadline.hours}
+                          </div>
+                          <div className="text-slate-400 text-xs">Hours</div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-3">
+                          <div className={`text-2xl font-bold ${
+                            getDeadlineStatus() === 'urgent' ? 'text-orange-400' : 
+                            getDeadlineStatus() === 'soon' ? 'text-yellow-400' : 
+                            'text-emerald-400'
+                          }`}>
+                            {timeUntilDeadline.minutes}
+                          </div>
+                          <div className="text-slate-400 text-xs">Minutes</div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-3">
+                          <div className={`text-2xl font-bold ${
+                            getDeadlineStatus() === 'urgent' ? 'text-orange-400' : 
+                            getDeadlineStatus() === 'soon' ? 'text-yellow-400' : 
+                            'text-emerald-400'
+                          }`}>
+                            {timeUntilDeadline.seconds}
+                          </div>
+                          <div className="text-slate-400 text-xs">Seconds</div>
+                        </div>
+                      </div>
+                      <p className="text-slate-400">Until registration closes</p>
+                      <p className="text-sm text-slate-500 mt-2">
+                        Deadline: {formatShortDate(event.deadline)}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-4xl font-bold text-slate-400 mb-2">
+                        N/A
+                      </div>
+                      <p className="text-slate-400">Loading deadline information...</p>
+                    </>
+                  )}
+                </div>
+              </div>
+
               {/* Time Until Event */}
               <div className="bg-slate-700/30 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Time Until Event</h3>
@@ -503,9 +734,9 @@ export const OwnerEventDetails = () => {
               </div>
 
               {/* Quick Stats */}
-              <div className="bg-slate-700/30 rounded-lg p-6 lg:col-span-2">
+              <div className="bg-slate-700/30 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Quick Stats</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="text-center">
                     <div className="text-3xl mb-2">📅</div>
                     <div className="text-2xl font-bold text-white mb-1">
@@ -519,9 +750,21 @@ export const OwnerEventDetails = () => {
                     <div className="text-slate-400 text-xs">Attendees</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl mb-2">📍</div>
-                    <div className="text-2xl font-bold text-white mb-1">1</div>
-                    <div className="text-slate-400 text-xs">Location</div>
+                    <div className="text-3xl mb-2">⏰</div>
+                    <div className={`text-2xl font-bold mb-1 ${
+                      getDeadlineStatus() === 'expired' ? 'text-red-400' : 
+                      getDeadlineStatus() === 'urgent' ? 'text-orange-400' : 
+                      getDeadlineStatus() === 'soon' ? 'text-yellow-400' : 
+                      'text-emerald-400'
+                    }`}>
+                      {getDeadlineStatus() === 'expired' 
+                        ? 'Closed' 
+                        : timeUntilDeadline && !timeUntilDeadline.expired
+                        ? `${timeUntilDeadline.days}d`
+                        : 'N/A'
+                      }
+                    </div>
+                    <div className="text-slate-400 text-xs">To Deadline</div>
                   </div>
                   <div className="text-center">
                     <div className="text-3xl mb-2">✨</div>

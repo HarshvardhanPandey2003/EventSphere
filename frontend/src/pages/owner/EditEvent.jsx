@@ -15,7 +15,7 @@ export const EditEvent = () => {
     description: '',
     startDate: '',
     endDate: '',
-    registrationDeadline: '',  // NEW FIELD
+    deadline: '',  // ✅ Changed from registrationDeadline to deadline
     location: '',
     capacity: '',
     image: null
@@ -55,7 +55,7 @@ export const EditEvent = () => {
         description: data.description || '',
         startDate: formatDateForInput(data.startDate),
         endDate: formatDateForInput(data.endDate),
-        registrationDeadline: formatDateForInput(data.registrationDeadline),
+        deadline: formatDateForInput(data.deadline),  // ✅ Changed from registrationDeadline
         location: data.location || '',
         capacity: data.capacity || '',
         image: null
@@ -89,7 +89,7 @@ export const EditEvent = () => {
     try {
       // Validation
       if (!formData.title || !formData.description || !formData.startDate || 
-          !formData.endDate || !formData.location || !formData.capacity) {
+          !formData.endDate || !formData.location || !formData.capacity || !formData.deadline) {
         setError('Please fill in all required fields');
         setSubmitting(false);
         return;
@@ -98,7 +98,7 @@ export const EditEvent = () => {
       // Validate dates
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
-      const regDeadline = formData.registrationDeadline ? new Date(formData.registrationDeadline) : null;
+      const deadline = new Date(formData.deadline);  // ✅ Changed from regDeadline
       
       if (end <= start) {
         setError('End date must be after start date');
@@ -106,7 +106,8 @@ export const EditEvent = () => {
         return;
       }
 
-      if (regDeadline && regDeadline > start) {
+      // ✅ Deadline is now mandatory, so always validate
+      if (deadline >= start) {
         setError('Registration deadline must be before event start date');
         setSubmitting(false);
         return;
@@ -118,9 +119,7 @@ export const EditEvent = () => {
       submitData.append('description', formData.description);
       submitData.append('startDate', formData.startDate);
       submitData.append('endDate', formData.endDate);
-      if (formData.registrationDeadline) {
-        submitData.append('registrationDeadline', formData.registrationDeadline);
-      }
+      submitData.append('deadline', formData.deadline);  // ✅ Changed from registrationDeadline
       submitData.append('location', formData.location);
       submitData.append('capacity', formData.capacity);
       
@@ -285,20 +284,21 @@ export const EditEvent = () => {
             </div>
           </div>
 
-          {/* Registration Deadline (NEW) */}
+          {/* Registration Deadline - ✅ Now MANDATORY */}
           <div>
             <label className="block text-sm font-semibold text-slate-300 mb-2">
-              Registration Deadline <span className="text-slate-500">(Optional)</span>
+              Registration Deadline <span className="text-red-400">*</span>
             </label>
             <input
               type="datetime-local"
-              name="registrationDeadline"
-              value={formData.registrationDeadline}
+              name="deadline"  // ✅ Changed from registrationDeadline
+              value={formData.deadline}  // ✅ Changed from registrationDeadline
               onChange={handleChange}
               className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+              required  // ✅ Added required attribute
             />
             <p className="text-slate-400 text-xs mt-2">
-              Set a deadline for event registration. If not set, registration remains open until the event starts.
+              Set a deadline for event registration. Must be before the event start date.
             </p>
           </div>
 

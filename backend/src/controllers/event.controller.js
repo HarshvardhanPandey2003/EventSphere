@@ -29,14 +29,9 @@ export const getEventById = async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // REMOVE THE ACCESS RESTRICTION - Allow all authenticated users to view events
-    // Users need to see event details before they can register
-    
-    // Optional: Add a flag to indicate if the current user is the owner or registered
     const isOwner = event.ownerId === req.user.id;
     const isAttendee = event.attendees.some(a => a.userId === req.user.id);
     
-    // Include this info in the response
     res.json({
       ...event,
       isOwner,
@@ -47,20 +42,26 @@ export const getEventById = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch event' });
   }
 };
+
 // Create new event
 export const createEvent = async (req, res) => {
   try {
-    const { title, description, startDate, endDate, location, capacity } = req.body;
+    const { title, description, startDate, endDate, location, capacity, deadline } = req.body;
     const ownerId = req.user.id;
 
     // Validation
-    if (!title || !description || !startDate || !endDate || !location || !capacity) {
+    if (!title || !description || !startDate || !endDate || !location || !capacity || !deadline) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
     // Check dates
     if (new Date(startDate) >= new Date(endDate)) {
       return res.status(400).json({ error: 'End date must be after start date' });
+    }
+
+    // Check deadline is before start date
+    if (new Date(deadline) >= new Date(startDate)) {
+      return res.status(400).json({ error: 'Registration deadline must be before event start date' });
     }
 
     // Get image path if uploaded
@@ -73,6 +74,7 @@ export const createEvent = async (req, res) => {
       endDate,
       location,
       capacity: parseInt(capacity),
+      deadline,
       image,
       ownerId
     });
@@ -101,9 +103,19 @@ export const updateEvent = async (req, res) => {
 
     const updateData = { ...req.body };
 
+    // Validate deadline if provided
+    if (updateData.deadline && updateData.startDate) {
+      if (new Date(updateData.deadline) >= new Date(updateData.startDate)) {
+        return res.status(400).json({ error: 'Registration deadline must be before event start date' });
+      }
+    } else if (updateData.deadline && !updateData.startDate) {
+      if (new Date(updateData.deadline) >= new Date(event.startDate)) {
+        return res.status(400).json({ error: 'Registration deadline must be before event start date' });
+      }
+    }
+
     // Handle new image upload
     if (req.file) {
-      // Delete old image if exists
       if (event.image) {
         const oldImagePath = path.join(__dirname, '../../', event.image);
         if (fs.existsSync(oldImagePath)) {
@@ -164,6 +176,11 @@ export const registerForEvent = async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
+    // Check if registration deadline has passed
+    if (new Date() > new Date(event.deadline)) {
+      return res.status(400).json({ error: 'Registration deadline has passed' });
+    }
+
     // Check if event is full
     if (event.attendees.length >= event.capacity) {
       return res.status(400).json({ error: 'Event is full' });
@@ -205,6 +222,7 @@ export const unregisterFromEvent = async (req, res) => {
     res.status(500).json({ error: 'Failed to unregister from event' });
   }
 };
+
 // Get all events (available for registration)
 export const getAllEvents = async (req, res) => {
   try {
@@ -216,7 +234,6 @@ export const getAllEvents = async (req, res) => {
   }
 };
 
-// ADD THIS: Get events user has registered for
 export const getRegisteredEvents = async (req, res) => {
   try {
     const userId = req.user.id;

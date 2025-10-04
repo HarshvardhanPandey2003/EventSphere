@@ -21,6 +21,30 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
     });
   };
 
+  // Get relative time until deadline
+  const getDeadlineStatus = (deadlineString) => {
+    if (!deadlineString) return null;
+    
+    const deadline = new Date(deadlineString);
+    const now = new Date();
+    const diffMs = deadline - now;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMs < 0) {
+      return { text: 'Registration closed', color: 'text-red-400', expired: true };
+    } else if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return { text: `Closes in ${diffMinutes} min`, color: 'text-red-400', expired: false };
+    } else if (diffHours < 24) {
+      return { text: `Closes in ${diffHours}h`, color: 'text-amber-400', expired: false };
+    } else if (diffDays < 7) {
+      return { text: `${diffDays}d left`, color: 'text-cyan-400', expired: false };
+    } else {
+      return { text: `Closes ${formatDate(deadlineString)}`, color: 'text-slate-400', expired: false };
+    }
+  };
+
   // Get status color
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -65,7 +89,7 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
     navigate(`/event/${event.id}`);
   };
 
-  // FIX: Get attendee count safely
+  // Get attendee count safely
   const getAttendeeCount = () => {
     if (Array.isArray(event.attendees)) {
       return event.attendees.length;
@@ -75,6 +99,8 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
     }
     return 0;
   };
+
+  const deadlineStatus = getDeadlineStatus(event.deadline);
 
   return (
     <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-all duration-300 group">
@@ -172,11 +198,22 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
           </div>
         )}
 
+        {/* Registration Deadline */}
+        {deadlineStatus && userRole === 'user' && (
+          <div className="flex items-center space-x-2 mb-4">
+            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className={`text-xs font-medium ${deadlineStatus.color}`}>
+              {deadlineStatus.text}
+            </span>
+          </div>
+        )}
+
         {/* Footer - Stats and Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
           {/* Stats */}
           <div className="flex items-center space-x-4 text-xs text-slate-400">
-            {/* FIX: Use getAttendeeCount() instead of event.attendees directly */}
             <div className="flex items-center space-x-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -196,15 +233,22 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
           {/* Action Buttons */}
           <div className="flex items-center space-x-2">
             {userRole === 'user' ? (
-              // User actions
+              // User actions - disable if deadline passed
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onRegister?.(event.id);
+                  if (!deadlineStatus?.expired) {
+                    onRegister?.(event.id);
+                  }
                 }}
-                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white text-sm font-semibold rounded-lg transition-all transform hover:scale-105 active:scale-95"
+                disabled={deadlineStatus?.expired}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all transform ${
+                  deadlineStatus?.expired
+                    ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white hover:scale-105 active:scale-95'
+                }`}
               >
-                Register
+                {deadlineStatus?.expired ? 'Closed' : 'Register'}
               </button>
             ) : (
               // Owner actions

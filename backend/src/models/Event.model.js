@@ -3,10 +3,10 @@ import { pool } from '../config/db.js';
 
 export const Event = {
   // Create new event
-  create: async ({ title, description, startDate, endDate, location, capacity, image, ownerId }) => {
+  create: async ({ title, description, startDate, endDate, location, capacity, deadline, image, ownerId }) => {
     const query = `
-      INSERT INTO events (title, description, start_date, end_date, location, capacity, image, owner_id) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      INSERT INTO events (title, description, start_date, end_date, location, capacity, deadline, image, owner_id) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
       RETURNING 
         id, 
         title, 
@@ -15,17 +15,18 @@ export const Event = {
         end_date AS "endDate", 
         location, 
         capacity, 
+        deadline,
         status, 
         image, 
         owner_id AS "ownerId", 
         created_at AS "createdAt"
     `;
-    const values = [title, description, startDate, endDate, location, capacity, image, ownerId];
+    const values = [title, description, startDate, endDate, location, capacity, deadline, image, ownerId];
     const result = await pool.query(query, values);
     return result.rows[0];
   },
 
-  // **NEW METHOD: Find all events (for browsing)**
+  // Find all events (for browsing)
   findAll: async () => {
     const query = `
       SELECT 
@@ -36,6 +37,7 @@ export const Event = {
         e.end_date AS "endDate",
         e.location,
         e.capacity,
+        e.deadline,
         e.status,
         e.image,
         e.owner_id AS "ownerId",
@@ -68,7 +70,7 @@ export const Event = {
     }));
   },
 
-  // **NEW METHOD: Find events by attendee (user's registered events)**
+  // Find events by attendee (user's registered events)
   findByAttendee: async (userId) => {
     const query = `
       SELECT 
@@ -79,6 +81,7 @@ export const Event = {
         e.end_date AS "endDate",
         e.location,
         e.capacity,
+        e.deadline,
         e.status,
         e.image,
         e.owner_id AS "ownerId",
@@ -125,6 +128,7 @@ export const Event = {
         e.end_date AS "endDate",
         e.location,
         e.capacity,
+        e.deadline,
         e.status,
         e.image,
         e.owner_id AS "ownerId",
@@ -167,6 +171,7 @@ export const Event = {
         e.end_date AS "endDate",
         e.location,
         e.capacity,
+        e.deadline,
         e.status,
         e.image,
         e.owner_id AS "ownerId",
@@ -203,7 +208,7 @@ export const Event = {
 
   // Update event
   update: async (eventId, updateData) => {
-    const { title, description, startDate, endDate, location, capacity, status, image } = updateData;
+    const { title, description, startDate, endDate, location, capacity, deadline, status, image } = updateData;
     
     const fields = [];
     const values = [];
@@ -233,6 +238,10 @@ export const Event = {
       fields.push(`capacity = $${paramIndex++}`);
       values.push(capacity);
     }
+    if (deadline !== undefined) {
+      fields.push(`deadline = $${paramIndex++}`);
+      values.push(deadline);
+    }
     if (status !== undefined) {
       fields.push(`status = $${paramIndex++}`);
       values.push(status);
@@ -261,6 +270,7 @@ export const Event = {
         end_date AS "endDate", 
         location, 
         capacity, 
+        deadline,
         status, 
         image, 
         owner_id AS "ownerId", 

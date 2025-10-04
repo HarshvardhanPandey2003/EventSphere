@@ -18,7 +18,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// Serve static files (uploaded images)
+// Serve static files 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 connectDB();

@@ -15,6 +15,7 @@ export const CreateEvent = () => {
     description: '',
     startDate: '',
     endDate: '',
+    deadline: '', // Added deadline field
     location: '',
     capacity: ''
   });
@@ -72,7 +73,7 @@ export const CreateEvent = () => {
 
     // Validation
     if (!formData.title || !formData.description || !formData.startDate || 
-        !formData.endDate || !formData.location || !formData.capacity) {
+        !formData.endDate || !formData.deadline || !formData.location || !formData.capacity) {
       setError('All fields are required');
       return;
     }
@@ -80,14 +81,27 @@ export const CreateEvent = () => {
     // Validate dates
     const start = new Date(formData.startDate);
     const end = new Date(formData.endDate);
+    const deadline = new Date(formData.deadline);
+    const now = new Date();
     
     if (start >= end) {
       setError('End date must be after start date');
       return;
     }
 
-    if (start < new Date()) {
+    if (start < now) {
       setError('Start date cannot be in the past');
+      return;
+    }
+
+    // Validate deadline
+    if (deadline >= start) {
+      setError('Registration deadline must be before event start date');
+      return;
+    }
+
+    if (deadline < now) {
+      setError('Registration deadline cannot be in the past');
       return;
     }
 
@@ -106,6 +120,7 @@ export const CreateEvent = () => {
       data.append('description', formData.description);
       data.append('startDate', formData.startDate);
       data.append('endDate', formData.endDate);
+      data.append('deadline', formData.deadline);
       data.append('location', formData.location);
       data.append('capacity', formData.capacity);
       
@@ -282,6 +297,30 @@ export const CreateEvent = () => {
                   required
                 />
               </div>
+            </div>
+
+            {/* Registration Deadline */}
+            <div>
+              <label htmlFor="deadline" className="block text-white font-semibold mb-2">
+                Registration Deadline *
+              </label>
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <input
+                  type="datetime-local"
+                  id="deadline"
+                  name="deadline"
+                  value={formData.deadline}
+                  onChange={handleChange}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                  required
+                />
+              </div>
+              <p className="text-slate-500 text-xs mt-2">
+                Last date and time for attendees to register for this event
+              </p>
             </div>
 
             {/* Location */}

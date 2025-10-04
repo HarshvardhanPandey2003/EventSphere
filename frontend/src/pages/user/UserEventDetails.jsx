@@ -103,13 +103,13 @@ export const UserEventDetails = () => {
     if (!event) return false;
     const now = new Date();
     const startDate = new Date(event.startDate);
-    const regDeadline = event.registrationDeadline ? new Date(event.registrationDeadline) : startDate;
+    const deadline = new Date(event.deadline);
     
     // Check if event has started
     if (now >= startDate) return false;
     
     // Check if registration deadline has passed
-    if (now >= regDeadline) return false;
+    if (now >= deadline) return false;
     
     // Check if event is full
     if (event.attendees.length >= event.capacity) return false;
@@ -120,6 +120,13 @@ export const UserEventDetails = () => {
   const getSpotsRemaining = () => {
     if (!event) return 0;
     return event.capacity - event.attendees.length;
+  };
+
+  const isDeadlinePassed = () => {
+    if (!event || !event.deadline) return false;
+    const now = new Date();
+    const deadline = new Date(event.deadline);
+    return now >= deadline;
   };
 
   if (loading) {
@@ -251,15 +258,29 @@ export const UserEventDetails = () => {
                   </div>
                 </div>
 
-                {/* Registration Deadline (if exists) */}
-                {event.registrationDeadline && (
-                  <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg flex items-start space-x-3">
-                    <svg className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* Registration Deadline */}
+                {event.deadline && (
+                  <div className={`mb-6 p-4 rounded-lg flex items-start space-x-3 ${
+                    isDeadlinePassed() 
+                      ? 'bg-red-500/10 border border-red-500/30' 
+                      : 'bg-orange-500/10 border border-orange-500/30'
+                  }`}>
+                    <svg className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                      isDeadlinePassed() ? 'text-red-400' : 'text-orange-400'
+                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div>
-                      <p className="text-orange-400 font-medium">Registration Deadline</p>
-                      <p className="text-orange-300 text-sm">{formatDate(event.registrationDeadline)}</p>
+                      <p className={`font-medium ${
+                        isDeadlinePassed() ? 'text-red-400' : 'text-orange-400'
+                      }`}>
+                        {isDeadlinePassed() ? 'Registration Deadline Passed' : 'Registration Deadline'}
+                      </p>
+                      <p className={`text-sm ${
+                        isDeadlinePassed() ? 'text-red-300' : 'text-orange-300'
+                      }`}>
+                        {formatDate(event.deadline)}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -431,10 +452,14 @@ export const UserEventDetails = () => {
               <p className="text-white">{event.capacity} attendees</p>
             </div>
 
-            {event.registrationDeadline && (
+            {event.deadline && (
               <div>
                 <h3 className="text-sm font-semibold text-slate-400 mb-2">Registration Deadline</h3>
-                <p className="text-white">{formatDate(event.registrationDeadline)}</p>
+                <p className={`font-medium ${
+                  isDeadlinePassed() ? 'text-red-400' : 'text-white'
+                }`}>
+                  {formatDate(event.deadline)}
+                </p>
               </div>
             )}
 
