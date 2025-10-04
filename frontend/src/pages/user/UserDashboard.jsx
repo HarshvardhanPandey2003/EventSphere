@@ -21,7 +21,7 @@ export const UserDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('registered'); // Default to registered
+  const [filter, setFilter] = useState('all'); // Changed default to 'all'
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -106,9 +106,10 @@ export const UserDashboard = () => {
 
   const filteredEvents = getFilteredEvents();
 
+  // Reordered filter tabs - 'All Events' now comes first
   const filterTabs = [
-    { value: 'registered', label: 'Registered', icon: '✅' },
     { value: 'all', label: 'All Events', icon: '📋' },
+    { value: 'registered', label: 'Registered', icon: '✅' },
     { value: 'upcoming', label: 'Upcoming', icon: '📅' },
     { value: 'past', label: 'Past', icon: '🕐' },
     { value: 'attended', label: 'Attended', icon: '✔️' }

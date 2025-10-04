@@ -1,11 +1,19 @@
 // frontend/src/components/EventCard.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
-export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDelete }) => {
+export const EventCard = ({ event, userRole = 'user', onManage, onDelete, onRegistrationChange }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [error, setError] = useState('');
+  const [isRegistered, setIsRegistered] = useState(
+    Array.isArray(event.attendees) && event.attendees.some(a => a.userId === user?.id)
+  );
 
   // Format date
   const formatDate = (dateString) => {
@@ -89,6 +97,54 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
     navigate(`/event/${event.id}`);
   };
 
+  // Handle registration
+  const handleRegister = async (e) => {
+    e.stopPropagation();
+    
+    try {
+      setRegistering(true);
+      setError('');
+      
+      await api.post(`/api/events/${event.id}/register`);
+      setIsRegistered(true);
+      
+      // Notify parent component of registration change
+      onRegistrationChange?.();
+    } catch (err) {
+      console.error('Error registering:', err);
+      setError(err.response?.data?.error || 'Failed to register for event');
+      
+      // Show error in alert
+      alert(err.response?.data?.error || 'Failed to register for event');
+    } finally {
+      setRegistering(false);
+    }
+  };
+
+  // Handle unregister
+  const handleUnregister = async (e) => {
+    e.stopPropagation();
+    
+    try {
+      setRegistering(true);
+      setError('');
+      
+      await api.delete(`/api/events/${event.id}/unregister`);
+      setIsRegistered(false);
+      
+      // Notify parent component of registration change
+      onRegistrationChange?.();
+    } catch (err) {
+      console.error('Error unregistering:', err);
+      setError(err.response?.data?.error || 'Failed to unregister from event');
+      
+      // Show error in alert
+      alert(err.response?.data?.error || 'Failed to unregister from event');
+    } finally {
+      setRegistering(false);
+    }
+  };
+
   // Get attendee count safely
   const getAttendeeCount = () => {
     if (Array.isArray(event.attendees)) {
@@ -101,6 +157,7 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
   };
 
   const deadlineStatus = getDeadlineStatus(event.deadline);
+  const isFull = getAttendeeCount() >= event.capacity;
 
   return (
     <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-all duration-300 group">
@@ -146,8 +203,20 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
           </div>
         )}
 
+        {/* Registered badge */}
+        {isRegistered && userRole === 'user' && (
+          <div className="absolute top-3 left-3">
+            <span className="px-3 py-1 bg-emerald-500/90 text-white text-xs font-semibold rounded-full border border-emerald-400 flex items-center space-x-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>Registered</span>
+            </span>
+          </div>
+        )}
+
         {/* Category badge */}
-        {event.category && (
+        {event.category && !isRegistered && (
           <div className="absolute top-3 left-3">
             <span className="px-3 py-1 bg-slate-900/70 backdrop-blur-sm text-slate-300 text-xs font-medium rounded-full border border-slate-700">
               {event.category}
@@ -210,6 +279,13 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
           </div>
         )}
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-red-400 text-xs">{error}</p>
+          </div>
+        )}
+
         {/* Footer - Stats and Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
           {/* Stats */}
@@ -233,23 +309,53 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
           {/* Action Buttons */}
           <div className="flex items-center space-x-2">
             {userRole === 'user' ? (
-              // User actions - disable if deadline passed
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!deadlineStatus?.expired) {
-                    onRegister?.(event.id);
-                  }
-                }}
-                disabled={deadlineStatus?.expired}
-                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all transform ${
-                  deadlineStatus?.expired
-                    ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white hover:scale-105 active:scale-95'
-                }`}
-              >
-                {deadlineStatus?.expired ? 'Closed' : 'Register'}
-              </button>
+              // User actions
+              <>
+                {isRegistered ? (
+                  <button
+                    onClick={handleUnregister}
+                    disabled={registering}
+                    className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-semibold rounded-lg transition-all border border-red-500/30 flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {registering ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
+                        <span>...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span>Unregister</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleRegister}
+                    disabled={registering || deadlineStatus?.expired || isFull}
+                    className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all transform flex items-center space-x-1 ${
+                      deadlineStatus?.expired || isFull
+                        ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white hover:scale-105 active:scale-95'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {registering ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>...</span>
+                      </>
+                    ) : deadlineStatus?.expired ? (
+                      'Closed'
+                    ) : isFull ? (
+                      'Full'
+                    ) : (
+                      'Register'
+                    )}
+                  </button>
+                )}
+              </>
             ) : (
               // Owner actions
               <>
