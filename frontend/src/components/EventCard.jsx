@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDelete }) => {
   const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   // Format date
   const formatDate = (dateString) => {
@@ -13,15 +14,7 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  // Format time
-  const formatTime = (timeString) => {
-    if (!timeString) return '';
-    const date = new Date(`2000-01-01T${timeString}`);
-    return date.toLocaleTimeString('en-US', {
+      year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
@@ -61,15 +54,6 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
         return (
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         );
-      case 'concert':
-      case 'music':
-        return (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-        );
-      case 'sports':
-        return (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-5-7h2a2 2 0 012 2v1H7V9a2 2 0 012-2zm-3 8h10a2 2 0 002-2v-4a2 2 0 00-2-2H7a2 2 0 00-2 2v4a2 2 0 002 2z" />
-        );
       default:
         return (
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -81,6 +65,17 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
     navigate(`/event/${event.id}`);
   };
 
+  // FIX: Get attendee count safely
+  const getAttendeeCount = () => {
+    if (Array.isArray(event.attendees)) {
+      return event.attendees.length;
+    }
+    if (typeof event.attendee_count === 'number') {
+      return event.attendee_count;
+    }
+    return 0;
+  };
+
   return (
     <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-all duration-300 group">
       {/* Event Image */}
@@ -88,15 +83,16 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
         className="aspect-video bg-gradient-to-br from-cyan-500/20 via-blue-500/20 to-emerald-500/20 relative overflow-hidden cursor-pointer"
         onClick={handleCardClick}
       >
-        {event.image_url ? (
+        {event.image && !imageError ? (
           <>
             <img
-              src={event.image_url}
+              src={event.image}
               alt={event.title}
               className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
               onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
             />
             {!imageLoaded && (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -137,22 +133,14 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
       {/* Event Details */}
       <div className="p-6">
         {/* Date and Time */}
-        {(event.date || event.time) && (
+        {(event.startDate || event.endDate) && (
           <div className="flex items-center space-x-4 mb-3 text-sm">
-            {event.date && (
+            {event.startDate && (
               <div className="flex items-center space-x-2 text-slate-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span>{formatDate(event.date)}</span>
-              </div>
-            )}
-            {event.time && (
-              <div className="flex items-center space-x-2 text-slate-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{formatTime(event.time)}</span>
+                <span>{formatDate(event.startDate)}</span>
               </div>
             )}
           </div>
@@ -188,20 +176,19 @@ export const EventCard = ({ event, userRole = 'user', onRegister, onManage, onDe
         <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
           {/* Stats */}
           <div className="flex items-center space-x-4 text-xs text-slate-400">
-            {event.attendees !== undefined && (
+            {/* FIX: Use getAttendeeCount() instead of event.attendees directly */}
+            <div className="flex items-center space-x-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>{getAttendeeCount()} attending</span>
+            </div>
+            {event.capacity && (
               <div className="flex items-center space-x-1">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{event.attendees} attending</span>
-              </div>
-            )}
-            {event.price !== undefined && (
-              <div className="flex items-center space-x-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{event.price === 0 ? 'Free' : `$${event.price}`}</span>
+                <span>{event.capacity} spots</span>
               </div>
             )}
           </div>

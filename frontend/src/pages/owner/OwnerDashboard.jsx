@@ -213,11 +213,11 @@ export const OwnerDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEvents.map((event) => (
                 <div
-                  key={event._id}
-                  onClick={() => navigate(`/owner/event/${event._id}`)}
+                  key={event.id}
+                  onClick={() => navigate(`/owner/event/${event.id}`)}  // CHANGED from /event/ to /owner/event/
                   className="cursor-pointer transform transition-all hover:scale-[1.02]"
                 >
-                  <EventCard event={event} />
+                  <EventCard event={event} userRole="owner" />
                 </div>
               ))}
             </div>

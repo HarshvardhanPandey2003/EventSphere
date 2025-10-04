@@ -1,6 +1,6 @@
 // frontend/src/pages/Dashboard.jsx
 import { useAuth } from '../hooks/useAuth';
-// import { UserDashboard } from './user/UserDashboard';
+import { UserDashboard } from './user/UserDashboard';
 import { OwnerDashboard } from './owner/OwnerDashboard';
 
 export const Dashboard = () => {
