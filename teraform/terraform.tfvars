@@ -4,6 +4,6 @@ location               = "eastus"
 storage_account_name   = "eventsphereimages01"
 postgres_server_name   = "eventsphere-postgres-01"
 postgres_database_name = "eventsphere"
-
+postgres_location      = "centralindia"     # PostgreSQL only
 # Service Principal Configuration
 service_principal_name = "eventsphere-app-sp"

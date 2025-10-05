@@ -1,7 +1,7 @@
 resource "azurerm_postgresql_flexible_server" "postgres" {
   name                = var.postgres_server_name
   resource_group_name = data.azurerm_resource_group.main.name
-  location            = var.location
+  location            = var.postgres_location  # Changed from var.location
   version             = "16"
   storage_mb          = 32768  # 32 GB (minimum allowed)
   sku_name            = "B_Standard_B1ms"  # 1 vCore, 2 GiB RAM (cheapest)
@@ -10,7 +10,7 @@ resource "azurerm_postgresql_flexible_server" "postgres" {
 
   authentication {
     active_directory_auth_enabled = true
-    password_auth_enabled         = true
+    password_auth_enabled         = false
     tenant_id                     = data.azurerm_client_config.current.tenant_id
   }
 
