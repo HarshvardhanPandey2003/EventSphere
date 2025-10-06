@@ -17,7 +17,14 @@ resource "azurerm_postgresql_flexible_server" "postgres" {
   # For practice, you can comment out admin password if only using Entra ID
 #   administrator_login    = "postgres"
 #   administrator_password = "P@ssw0rd123!ComplexPassword"
-
+  # Add this lifecycle block
+  lifecycle {
+    ignore_changes = [
+      zone,
+      high_availability[0].standby_availability_zone
+    ]
+  }
+  
   tags = {
     environment = "development"
     project     = "eventsphere"
