@@ -4,20 +4,24 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node -r dotenv/config src/app.js dotenv_config_path=.env.production",
-    "dev": "node -r dotenv/config src/appp.js dotenv_config_path=.env.development",
-    "migrate": "node scripts/migrate.js"
+    "start": "node src/app.js",
+    "dev": "cross-env NODE_ENV=development node -r dotenv/config src/app.js dotenv_config_path=.env.development",
+    "prod": "cross-env NODE_ENV=production node -r dotenv/config src/app.js dotenv_config_path=.env.production"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@azure/storage-blob": "^12.28.0",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
   }
 }
