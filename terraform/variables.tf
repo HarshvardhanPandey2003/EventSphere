@@ -1,4 +1,4 @@
-// variables.tf
+# terraform/variables.tf
 variable "subscription_id" {
   description = "Azure subscription ID"
   type        = string
@@ -20,21 +20,24 @@ variable "storage_account_name" {
   type        = string
 }
 
-variable "postgres_server_name" {
-  description = "PostgreSQL Flexible Server name (must be globally unique)"
+variable "sql_server_name" {
+  description = "Azure SQL Server name (must be globally unique)"
   type        = string
 }
 
-variable "postgres_database_name" {
-  description = "PostgreSQL database name"
+variable "sql_database_name" {
+  description = "Azure SQL Database name"
   type        = string
 }
-variable "postgres_location" {
-  description = "Azure region for PostgreSQL (Central India for quota availability)"
+
+variable "sql_admin_login" {
+  description = "SQL Server administrator login"
   type        = string
-  default     = "centralindia"
+  default     = "sqladmin"
 }
-variable "service_principal_name" {
-  description = "Display name for the service principal"
+
+variable "sql_admin_password" {
+  description = "SQL Server administrator password (use strong password)"
   type        = string
+  sensitive   = true
 }
