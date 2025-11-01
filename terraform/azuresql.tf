@@ -1,22 +1,35 @@
 # terraform/azuresql.tf
+
+# Data source to get your current public IP
+data "http" "myip" {
+  url = "https://api.ipify.org?format=text"
+}
+
+# ✅ Look up your Azure AD user by Object ID (more reliable for external accounts)
+data "azuread_user" "sql_admin" {
+  object_id = var.sql_admin_object_id
+}
+
 resource "azurerm_mssql_server" "sql" {
   name                         = var.sql_server_name
   resource_group_name          = data.azurerm_resource_group.main.name
-  location                     = var.location  # East US
+  location                     = var.location
   version                      = "12.0"
-  administrator_login          = var.sql_admin_login
-  administrator_login_password = var.sql_admin_password
   minimum_tls_version          = "1.2"
 
-  # Set the service principal as Azure AD admin
+  # Set YOUR personal account as Azure AD admin
   azuread_administrator {
-    login_username              = "eventsphere-automation"
-    object_id                   = data.azurerm_client_config.current.object_id
+    login_username              = data.azuread_user.sql_admin.user_principal_name
+    object_id                   = data.azuread_user.sql_admin.object_id
     tenant_id                   = data.azurerm_client_config.current.tenant_id
-    azuread_authentication_only = false  # Allow both SQL and Azure AD auth
+    azuread_authentication_only = false  # Allow both Azure AD AND SQL auth
   }
 
-  # Enable system-assigned managed identity for Azure AD integration
+  # SQL Server admin credentials (for emergency access via SQL auth)
+  administrator_login          = var.sql_admin_login
+  administrator_login_password = var.sql_admin_password
+
+  # Enable system-assigned managed identity
   identity {
     type = "SystemAssigned"
   }
@@ -49,10 +62,10 @@ resource "azurerm_mssql_firewall_rule" "allow_azure" {
   end_ip_address   = "0.0.0.0"
 }
 
-# Allow local development IP
-resource "azurerm_mssql_firewall_rule" "allow_local_dev" {
-  name             = "allow-local-dev"
+# Automatically allow your current machine's public IP
+resource "azurerm_mssql_firewall_rule" "allow_my_ip" {
+  name             = "allow-my-current-ip"
   server_id        = azurerm_mssql_server.sql.id
-  start_ip_address = "103.10.226.1"
-  end_ip_address   = "103.10.226.1"
+  start_ip_address = data.http.myip.response_body
+  end_ip_address   = data.http.myip.response_body
 }

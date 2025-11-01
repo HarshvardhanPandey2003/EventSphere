@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "cross-env NODE_ENV=development node -r dotenv/config src/app.js dotenv_config_path=.env.development",
-    "prod": "cross-env NODE_ENV=production node -r dotenv/config src/app.js dotenv_config_path=.env.production"
+    "dev": "cross-env NODE_ENV=development node -r dotenv/config src/app.js dotenv_config_path=.env"
   },
   "keywords": [],
   "author": "",
@@ -15,12 +14,16 @@
   "dependencies": {
     "@azure/identity": "^4.13.0",
     "@azure/storage-blob": "^12.28.0",
+    "@prisma/adapter-mssql": "^6.18.0",
+    "@prisma/client": "^6.18.0",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.2",
+    "mssql": "^12.0.0",
     "multer": "^2.0.2",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "prisma": "^6.18.0"
   },
   "devDependencies": {
     "cross-env": "^10.1.0"

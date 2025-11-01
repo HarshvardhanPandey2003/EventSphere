@@ -40,7 +40,7 @@ export const register = async (req, res) => {
 // Login user
 export const login = async (req, res) => {
   try {
-    const { email, password, role } = req.body; // ✅ Extract role from request
+    const { email, password, role } = req.body; //  Extract role from request
 
     // Find user with password
     const user = await User.findOne({ email });
