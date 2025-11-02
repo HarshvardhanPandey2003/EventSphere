@@ -1,13 +1,7 @@
 // backend/src/controllers/event.controller.js
 import { Event } from '../models/Event.model.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { replaceImage, deleteBlob } from '../utils/blobStorage.util.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Get all events for owner
 export const getOwnerEvents = async (req, res) => {
   try {
     const ownerId = req.user.id;
@@ -19,7 +13,6 @@ export const getOwnerEvents = async (req, res) => {
   }
 };
 
-// Get single event by ID
 export const getEventById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -43,29 +36,25 @@ export const getEventById = async (req, res) => {
   }
 };
 
-// Create new event
 export const createEvent = async (req, res) => {
   try {
     const { title, description, startDate, endDate, location, capacity, deadline } = req.body;
     const ownerId = req.user.id;
 
-    // Validation
     if (!title || !description || !startDate || !endDate || !location || !capacity || !deadline) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Check dates
     if (new Date(startDate) >= new Date(endDate)) {
       return res.status(400).json({ error: 'End date must be after start date' });
     }
 
-    // Check deadline is before start date
     if (new Date(deadline) >= new Date(startDate)) {
       return res.status(400).json({ error: 'Registration deadline must be before event start date' });
     }
 
-    // Get image path if uploaded
-    const image = req.file ? `/uploads/events/${req.file.filename}` : null;
+    // ✅ Upload image (no old image to replace)
+    const image = await replaceImage(req.file, null, 'event');
 
     const event = await Event.create({
       title,
@@ -86,7 +75,6 @@ export const createEvent = async (req, res) => {
   }
 };
 
-// Update event
 export const updateEvent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -96,14 +84,12 @@ export const updateEvent = async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // Check ownership
     if (event.ownerId !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to update this event' });
     }
 
     const updateData = { ...req.body };
 
-    // Validate deadline if provided
     if (updateData.deadline && updateData.startDate) {
       if (new Date(updateData.deadline) >= new Date(updateData.startDate)) {
         return res.status(400).json({ error: 'Registration deadline must be before event start date' });
@@ -114,15 +100,10 @@ export const updateEvent = async (req, res) => {
       }
     }
 
-    // Handle new image upload
+    // ✅ Replace image if new file uploaded
     if (req.file) {
-      if (event.image) {
-        const oldImagePath = path.join(__dirname, '../../', event.image);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
-      }
-      updateData.image = `/uploads/events/${req.file.filename}`;
+      const newImageUrl = await replaceImage(req.file, event.image, 'event');
+      updateData.image = newImageUrl;
     }
 
     const updatedEvent = await Event.update(id, updateData);
@@ -133,7 +114,6 @@ export const updateEvent = async (req, res) => {
   }
 };
 
-// Delete event
 export const deleteEvent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -143,17 +123,12 @@ export const deleteEvent = async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // Check ownership
     if (event.ownerId !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to delete this event' });
     }
 
-    // Delete image file if exists
     if (event.image) {
-      const imagePath = path.join(__dirname, '../../', event.image);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
+      await deleteBlob(event.image);
     }
 
     await Event.delete(id);
@@ -164,7 +139,6 @@ export const deleteEvent = async (req, res) => {
   }
 };
 
-// Register for event
 export const registerForEvent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -176,17 +150,14 @@ export const registerForEvent = async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // Check if registration deadline has passed
     if (new Date() > new Date(event.deadline)) {
       return res.status(400).json({ error: 'Registration deadline has passed' });
     }
 
-    // Check if event is full
     if (event.attendees.length >= event.capacity) {
       return res.status(400).json({ error: 'Event is full' });
     }
 
-    // Check if already registered
     if (event.attendees.some(a => a.userId === userId)) {
       return res.status(400).json({ error: 'Already registered for this event' });
     }
@@ -201,7 +172,6 @@ export const registerForEvent = async (req, res) => {
   }
 };
 
-// Unregister from event
 export const unregisterFromEvent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -223,7 +193,6 @@ export const unregisterFromEvent = async (req, res) => {
   }
 };
 
-// Get all events (available for registration)
 export const getAllEvents = async (req, res) => {
   try {
     const events = await Event.findAll();

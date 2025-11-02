@@ -1,8 +1,9 @@
-/commands.txt
+/temp.txt
 /terraform/.terraform.tfvars/*
 /doc.txt
 terraform/.terraform
 terraform/.terraform.lock.hcl
 terraform/terraform.tfstate
 terraform/terraform.tfvars
+/commands.txt
 .env 

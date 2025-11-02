@@ -1,8 +1,6 @@
 #!/bin/bash
 # setup-sql-auth.sh
-
 set -e
-
 echo "============================================"
 echo "EventSphere - SQL Authentication Setup"
 echo "============================================"

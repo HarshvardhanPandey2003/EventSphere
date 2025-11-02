@@ -1,22 +1,15 @@
 // backend/src/controllers/profile.controller.js
 import { UserProfile, OwnerProfile } from '../models/Profile.model.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { replaceImage, deleteBlob } from '../utils/blobStorage.util.js';
 
 // USER PROFILE CONTROLLERS
 
-// Get user profile
 export const getUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     
     let profile = await UserProfile.findByUserId(userId);
     
-    // Create profile if doesn't exist
     if (!profile) {
       profile = await UserProfile.create(userId, {});
     }
@@ -28,23 +21,20 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-// Update user profile
 export const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const updateData = { ...req.body };
     
-    // Handle avatar upload
+    // ✅ Handle avatar replacement (delete old + upload new)
     if (req.file) {
-      // Delete old avatar if exists
       const existingProfile = await UserProfile.findByUserId(userId);
-      if (existingProfile?.avatar) {
-        const oldAvatarPath = path.join(__dirname, '../../', existingProfile.avatar);
-        if (fs.existsSync(oldAvatarPath)) {
-          fs.unlinkSync(oldAvatarPath);
-        }
-      }
-      updateData.avatar = `/uploads/avatars/${req.file.filename}`;
+      const newAvatarUrl = await replaceImage(
+        req.file, 
+        existingProfile?.avatar, 
+        'avatar'
+      );
+      updateData.avatar = newAvatarUrl;
     }
     
     // Parse JSON fields
@@ -55,7 +45,6 @@ export const updateUserProfile = async (req, res) => {
       updateData.socialLinks = JSON.parse(updateData.socialLinks);
     }
     
-    // Check if profile exists
     const existingProfile = await UserProfile.findByUserId(userId);
     
     let profile;
@@ -65,7 +54,6 @@ export const updateUserProfile = async (req, res) => {
       profile = await UserProfile.create(userId, updateData);
     }
     
-    // Fetch complete profile with user data
     const completeProfile = await UserProfile.findByUserId(userId);
     
     res.json(completeProfile);
@@ -77,17 +65,14 @@ export const updateUserProfile = async (req, res) => {
 
 // OWNER PROFILE CONTROLLERS
 
-// Get owner profile
 export const getOwnerProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     
     let profile = await OwnerProfile.findByUserId(userId);
     
-    // Create profile if doesn't exist
     if (!profile) {
       profile = await OwnerProfile.create(userId, {});
-      // Fetch again to get the complete data with event count
       profile = await OwnerProfile.findByUserId(userId);
     }
     
@@ -98,31 +83,26 @@ export const getOwnerProfile = async (req, res) => {
   }
 };
 
-// Update owner profile
 export const updateOwnerProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const updateData = { ...req.body };
     
-    // Handle avatar upload
+    // ✅ Handle avatar replacement
     if (req.file) {
-      // Delete old avatar if exists
       const existingProfile = await OwnerProfile.findByUserId(userId);
-      if (existingProfile?.avatar) {
-        const oldAvatarPath = path.join(__dirname, '../../', existingProfile.avatar);
-        if (fs.existsSync(oldAvatarPath)) {
-          fs.unlinkSync(oldAvatarPath);
-        }
-      }
-      updateData.avatar = `/uploads/avatars/${req.file.filename}`;
+      const newAvatarUrl = await replaceImage(
+        req.file,
+        existingProfile?.avatar,
+        'avatar'
+      );
+      updateData.avatar = newAvatarUrl;
     }
     
-    // Parse JSON fields
     if (updateData.socialLinks && typeof updateData.socialLinks === 'string') {
       updateData.socialLinks = JSON.parse(updateData.socialLinks);
     }
     
-    // Check if profile exists
     const existingProfile = await OwnerProfile.findByUserId(userId);
     
     let profile;
@@ -132,10 +112,7 @@ export const updateOwnerProfile = async (req, res) => {
       profile = await OwnerProfile.create(userId, updateData);
     }
     
-    // Update event count
     await OwnerProfile.updateEventCount(userId);
-    
-    // Fetch complete profile with user data and event count
     const completeProfile = await OwnerProfile.findByUserId(userId);
     
     res.json(completeProfile);
@@ -145,19 +122,14 @@ export const updateOwnerProfile = async (req, res) => {
   }
 };
 
-// Delete profile (soft delete - just removes extra data, keeps user account)
 export const deleteUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     
     const profile = await UserProfile.findByUserId(userId);
     
-    // Delete avatar file if exists
     if (profile?.avatar) {
-      const avatarPath = path.join(__dirname, '../../', profile.avatar);
-      if (fs.existsSync(avatarPath)) {
-        fs.unlinkSync(avatarPath);
-      }
+      await deleteBlob(profile.avatar);
     }
     
     await UserProfile.delete(userId);
@@ -175,12 +147,8 @@ export const deleteOwnerProfile = async (req, res) => {
     
     const profile = await OwnerProfile.findByUserId(userId);
     
-    // Delete avatar file if exists
     if (profile?.avatar) {
-      const avatarPath = path.join(__dirname, '../../', profile.avatar);
-      if (fs.existsSync(avatarPath)) {
-        fs.unlinkSync(avatarPath);
-      }
+      await deleteBlob(profile.avatar);
     }
     
     await OwnerProfile.delete(userId);
