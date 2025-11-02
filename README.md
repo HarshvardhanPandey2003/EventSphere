@@ -1,7 +1,3 @@
-Here’s a **professional and detailed GitHub README project description** written in **GitHub Flavored Markdown (GFM)** that fits your stack and deployment setup 👇
-
----
-
 # 🎟️ EventSphere — Cloud-Native Event Management Platform
 
 **EventSphere** is a full-stack web application built with **React**, **Node.js**, **Express**, and **MySQL**, designed to simplify event management, student registration, and media handling. The project is architected and deployed on **Microsoft Azure**, leveraging several of its cloud-native services to ensure scalability, reliability, and automation.
